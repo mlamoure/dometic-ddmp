@@ -101,9 +101,12 @@ class AsyncClient:
                 await asyncio.sleep(self.subscribe_spacing)
 
     async def set(
-        self, name: str, value: Any, *, compartment: int | None = None, timeout: float = 5.0
+        self, name: str, value: Any, *, compartment: int | None = None, timeout: float = 10.0
     ) -> Any:
-        """Write a value and wait for the cooler's echo; returns the published value."""
+        """Write a value and wait for the cooler to publish it; returns the published value.
+
+        The cooler re-publishes the old value first and the new one a few seconds later.
+        """
         frame, expectation = self.session.set_frame(name, value, compartment=compartment)
         fut: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
         self._pending.append((expectation, fut))
@@ -111,7 +114,10 @@ class AsyncClient:
             await self.send(frame)
             return await asyncio.wait_for(fut, timeout)
         except TimeoutError as exc:
-            raise WriteTimeout(f"no echo for {expectation.topic.name} within {timeout}s") from exc
+            raise WriteTimeout(
+                f"{expectation.topic.name} not confirmed within {timeout}s "
+                f"(cooler reports {expectation.observed!r})"
+            ) from exc
         finally:
             with contextlib.suppress(ValueError):
                 self._pending.remove((expectation, fut))
@@ -164,7 +170,4 @@ class AsyncClient:
             if verdict is True:
                 fut.set_result(expectation.observed)
             elif verdict is False:
-                name = expectation.topic.name
-                fut.set_exception(
-                    WriteRejected(f"cooler refused {name}: observed {expectation.observed!r}")
-                )
+                fut.set_exception(WriteRejected(f"cooler refused {expectation.topic.name} (NAK)"))

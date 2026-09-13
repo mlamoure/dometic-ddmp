@@ -1,7 +1,8 @@
 """Command-line tool: ``python -m ddmp`` / ``ddmp``.
 
 Read-only commands: ``discover``, ``watch``, ``state``. Write commands (``set-temp``, ``set``)
-print the exact frame and refuse to send it unless ``--yes`` is given.
+print the exact frame and refuse to send it unless ``--yes`` is given. Exit codes for writes:
+0 confirmed by the cooler's publish, 3 NAK, 4 not confirmed within the echo timeout.
 """
 
 from __future__ import annotations
@@ -157,10 +158,14 @@ def _write(args: argparse.Namespace, name: str, value: Any, compartment: int | N
                     print(f"confirmed: {name} = {_fmt_value(expectation.observed)}")
                     return 0
                 if verdict is False:
-                    print(f"REFUSED: observed {_fmt_value(expectation.observed)}", file=sys.stderr)
+                    print("REFUSED: the cooler answered NAK", file=sys.stderr)
                     return 3
             time.sleep(0.1)
-        print(f"TIMEOUT: no echo within {args.echo_timeout}s", file=sys.stderr)
+        print(
+            f"NOT CONFIRMED within {args.echo_timeout}s; cooler reports "
+            f"{_fmt_value(expectation.observed)}",
+            file=sys.stderr,
+        )
         return 4
     finally:
         client.close()
@@ -218,7 +223,12 @@ def main(argv: list[str] | None = None) -> int:
         conn_args(sp)
         sp.add_argument("--compartment", type=int, default=None)
         sp.add_argument("--wait", type=float, default=3.0, help="seconds to collect state first")
-        sp.add_argument("--echo-timeout", type=float, default=5.0)
+        sp.add_argument(
+            "--echo-timeout",
+            type=float,
+            default=10.0,
+            help="seconds to wait for the cooler to publish the new value (it takes ~3 s)",
+        )
         sp.add_argument("--yes", action="store_true", help="actually send the SET")
         sp.add_argument("--quiet", action="store_true")
 

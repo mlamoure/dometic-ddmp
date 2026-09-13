@@ -62,14 +62,19 @@ class WriteExpectation:
     observed: Any = None
 
     def matches(self, event: Event) -> bool | None:
-        """``True`` when the echo confirms the write, ``False`` when the cooler refused it
-        (NAK, or a publish of a different value), ``None`` when the event is unrelated."""
+        """``True`` when a publish confirms the write, ``False`` when the cooler refused it
+        with a NAK, ``None`` otherwise.
+
+        The cooler answers a SET by re-publishing the *old* value first and publishes the new
+        value a few seconds later, so a publish that does not match yet is not a refusal; the
+        last value seen is kept in :attr:`observed` for the timeout message.
+        """
         if isinstance(event, Nak):
             return False if event.address == self.topic.address else None
         if not isinstance(event, Publish) or event.address != self.topic.address:
             return None
         self.observed = event.value
-        return _close(event.value, self.expected, self.tolerance)
+        return True if _close(event.value, self.expected, self.tolerance) else None
 
 
 def _close(a: Any, b: Any, tol: float) -> bool:
@@ -140,7 +145,8 @@ class Session:
         their last published value), so the current value must be known first.
         """
         tp = assert_writable(name)
-        tolerance = 0.0005 if tp.codec.kind.startswith("milli") else 0.0
+        # the cooler stores temperatures with 0.1 °C granularity (2.2222 -> 2.2)
+        tolerance = 0.051 if tp.codec.kind.startswith("milli") else 0.0
         if tp.per_compartment:
             current = self.values.get(tp.name)
             if not current:
