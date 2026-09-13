@@ -60,6 +60,18 @@ Only five topics can be written (`csettemp`, `cpow`, `coolerpow`, `batprotlvl`, 
 everything else raises `NotWritable`. The cooler holds at most four connections and never
 closes idle ones, so keep one client per process and close it when done.
 
+### How the cooler answers a write (verified 2026-09-13 on a CFX5 25, firmware MC1_1.0.2)
+
+* A SET is not acknowledged. The cooler first re-publishes the **old** value (usually twice),
+  then publishes the **new** value about 3 s later, again twice. `WriteExpectation` therefore
+  treats a non-matching publish as "not yet" and only a NAK as a refusal; wait up to 10 s.
+* Set-points are stored with 0.1 °C granularity: `2.2222` is stored and published as `2.2`.
+  Non-integer values are fine (2.0 °C = 35.6 °F was accepted on a unit displaying °F).
+* Verified frames: set-point `11 05 00 00 1A D0 07 00 00` (2.0 °C) and `… E8 03 00 00`
+  (1.0 °C); battery protection `11 0D 00 00 1A 00 00 00 00` (Low) and `… 01 00 00 00`
+  (Medium). Cooler power (`coolerpow`) and compartment power (`cpow`) use the same layout
+  and are verified by the community over Bluetooth.
+
 ## Protocol summary
 
 | | |

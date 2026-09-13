@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dometic-ddmp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local Wi-Fi client for Dometic CFX5 coolers (DDMP v2 / DDM2 protocol): discovery, base64-framed TCP client, topic table, CLI."
 readme = "README.md"
 license = { text = "MIT" }

@@ -47,6 +47,10 @@ python -m ddmp watch 10.66.40.129 --raw             # live read-only stream
   input is read at ~2.5 KB/s; unparseable input is silently discarded.
 - Publishes arrive once per subscribe and then on every change. No keepalive either way, so
   `SyncClient` enables TCP keepalive (30 s idle / 10 s / 3 probes).
+- A SET is answered by a re-publish of the OLD value first, then the NEW value ~3 s later
+  (each usually twice). Only a NAK means refusal; wait up to 10 s for the matching publish.
+  Set-points are rounded by the cooler to 0.1 °C. Verified live 2026-09-13 for `csettemp`
+  and `batprotlvl` (values restored afterwards).
 - The cooler is often powered off: a connect timeout means "off", not "broken".
 
 ## Release

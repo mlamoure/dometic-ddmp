@@ -136,13 +136,17 @@ class TestWriteExpectation:
         assert exp.matches(Nak(Address(1, 1, 1, 1), b"")) is None
         (other,) = s.feed(publish_frame("v", 13.6).encode_line())
         assert exp.matches(other) is None
-        (echo,) = s.feed(publish_frame("batprotlvl", BatteryProtection.LOW).encode_line())
-        assert exp.matches(echo) is False
+        # the cooler re-publishes the OLD value first: not a refusal, just "not yet"
+        (old,) = s.feed(publish_frame("batprotlvl", BatteryProtection.LOW).encode_line())
+        assert exp.matches(old) is None
         assert exp.observed is BatteryProtection.LOW
+        (new,) = s.feed(publish_frame("batprotlvl", BatteryProtection.HIGH).encode_line())
+        assert exp.matches(new) is True
 
     def test_tolerance(self):
         from ddmp.protocol import TOPIC_BY_NAME
 
-        exp = WriteExpectation(TOPIC_BY_NAME["csettemp"], [1.0], tolerance=0.0005)
-        assert exp.matches(Publish(exp.topic.address, exp.topic, [1.0004], b"")) is True
-        assert exp.matches(Publish(exp.topic.address, exp.topic, [1.5], b"")) is False
+        exp = WriteExpectation(TOPIC_BY_NAME["csettemp"], [2.2222], tolerance=0.051)
+        # the cooler rounds to 0.1 °C: 2.2222 is stored and published as 2.2
+        assert exp.matches(Publish(exp.topic.address, exp.topic, [2.2], b"")) is True
+        assert exp.matches(Publish(exp.topic.address, exp.topic, [1.5], b"")) is None
