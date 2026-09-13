@@ -24,8 +24,10 @@ python -m ddmp watch 10.66.40.129 --raw             # live read-only stream
   reconnect policy belongs to the caller.
 - `src/ddmp/aio.py` — asyncio client with the same semantics (for Home Assistant later).
 - `src/ddmp/discovery.py` — `DDMD` UDP probe and a stdlib one-shot mDNS browse (multicast
-  query so an mDNS repeater can reflect the answer across VLANs); `discover()` merges both by
-  the MAC tail.
+  query so an mDNS repeater can reflect the answer across VLANs). The browse is two-stage
+  DNS-SD: PTR first, then SRV/TXT/A follow-ups, because the CFX5 answers a browse with the
+  PTR record alone once it has been up for a while. `discover()` merges mDNS and probe hits
+  by the MAC tail.
 - `src/ddmp/models.py` — enums, error texts, `CoolerState`.
 - `src/ddmp/__main__.py` — CLI. Write commands are dry runs unless `--yes`.
 

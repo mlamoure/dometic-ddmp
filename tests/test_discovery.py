@@ -148,3 +148,32 @@ def test_discover_merges_mdns_and_probe(monkeypatch):
 def test_json_reply_survives_repr():
     r = DdmdReply.parse(LIVE_REPLY, "h", 1)
     assert json.loads(json.dumps(r.__dict__ if hasattr(r, "__dict__") else {"id": r.cooler_id}))
+
+
+def test_collector_reports_missing_records_for_ptr_only_answer():
+    c = _MdnsCollector("_ddmp._tcp.local")
+    header = struct.pack(">HHHHHH", 0, 0x8400, 0, 1, 0, 0)
+    instance = "Dometic CFX5._ddmp._tcp.local"
+    c.add(header + _record("_ddmp._tcp.local", 12, _name(instance)))
+    assert c.services() == []  # unresolved: no SRV yet
+    assert c.missing() == [(instance, 33), (instance, 16)]
+    hostname = "MC1_34f12c.local"
+    c.add(
+        struct.pack(">HHHHHH", 0, 0x8400, 0, 2, 0, 0)
+        + _record(instance, 33, struct.pack(">HHH", 0, 0, 13143) + _name(hostname))
+        + _record(instance, 16, b"\x13fwversion=MC1_1.0.2")
+    )
+    assert c.missing() == [(hostname, 1)]
+    c.add(
+        struct.pack(">HHHHHH", 0, 0x8400, 0, 1, 0, 0)
+        + _record(hostname, 1, socket.inet_aton("10.66.40.129"))
+    )
+    assert c.missing() == []
+    (svc,) = c.services()
+    assert svc.addresses == ("10.66.40.129",) and svc.txt == {"fwversion": "MC1_1.0.2"}
+
+
+def test_build_query_with_follow_up_questions():
+    q = build_query(questions=[("Dometic CFX5._ddmp._tcp.local", 33), ("MC1_34f12c.local", 1)])
+    assert struct.unpack(">HHHHHH", q[:12]) == (0, 0, 2, 0, 0, 0)
+    assert b"\x0cDometic CFX5" in q and q.endswith(struct.pack(">HH", 1, 1))
