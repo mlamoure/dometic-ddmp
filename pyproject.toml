@@ -29,7 +29,7 @@ dev = ["pytest~=8.4", "pytest-asyncio~=1.1", "ruff~=0.13"]
 ddmp = "ddmp.__main__:main"
 
 [project.urls]
-Homepage = "https://git.home.mikelamoureux.net/mike/dometic-ddmp"
+Homepage = "https://github.com/mlamoure/dometic-ddmp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ddmp"]
