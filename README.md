@@ -34,13 +34,15 @@ Write commands print the exact frame first and wait for the cooler's echo (exit 
 ```python
 from ddmp import SyncClient, Publish
 
+
 def on_event(event):
     if isinstance(event, Publish):
         print(event.name, event.value)
 
+
 client = SyncClient("10.66.40.129", on_event=on_event)
-client.connect()                      # subscribes to everything; publishes arrive as they change
-state = client.state()                # ddmp.CoolerState, all values in °C / V / A
+client.connect()  # subscribes to everything; publishes arrive as they change
+state = client.state()  # ddmp.CoolerState, all values in °C / V / A
 expect = client.set("csettemp", 2.0)  # returns a WriteExpectation; the echo confirms it
 client.close()
 ```
@@ -51,7 +53,7 @@ from ddmp import AsyncClient
 async with await AsyncClient.connect("10.66.40.129") as client:
     async for event in client.events():
         ...
-    await client.set("coolerpow", False)   # waits for the echo; WriteRejected / WriteTimeout
+    await client.set("coolerpow", False)  # waits for the echo; WriteRejected / WriteTimeout
 ```
 
 Only five topics can be written (`csettemp`, `cpow`, `coolerpow`, `batprotlvl`, `icepow`);
