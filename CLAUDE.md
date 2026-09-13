@@ -58,5 +58,6 @@ python -m ddmp watch 10.66.40.129 --raw             # live read-only stream
 ## Release
 
 Static version in `pyproject.toml` and `src/ddmp/__init__.py` (keep them equal). Tag
-`vX.Y.Z` on Gitea (`mike/dometic-ddmp`). GitHub / PyPI publishing only after Mike's explicit
-approval.
+`vX.Y.Z` on Gitea (`mike/dometic-ddmp`, remote `origin`) and mirror main + tags + the release
+to GitHub (`mlamoure/dometic-ddmp`, remote `github`; public since 2026-09-13). PyPI publishing
+only after Mike's explicit approval.

@@ -11,7 +11,7 @@ control from its apps in November 2025; the cooler firmware still serves it.
 ## Install
 
 ```bash
-pip install dometic-ddmp        # once published; until then: pip install -e .
+pip install git+https://github.com/mlamoure/dometic-ddmp.git@v0.1.2   # not on PyPI yet
 ```
 
 ## Command line
